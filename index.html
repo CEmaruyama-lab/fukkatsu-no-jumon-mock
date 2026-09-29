@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>じゅもんの ぼうけん｜ふっかつのじゅもん体験モック</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#000;--fg:#fcfcfc;--dim:#9c9c9c;--gold:#f8b800;--red:#d82800;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#000;--fg:#fcfcfc}}
+:root[data-theme="dark"]{--bg:#000;--fg:#fcfcfc}
+*,*::before,*::after{box-sizing:inherit}
+html{height:100%}
+body{height:100%;margin:0;background:var(--bg);color:var(--fg);font-family:"DotGothic16","Hiragino Kaku Gothic ProN","Noto Sans JP",monospace;display:flex;align-items:center;justify-content:center;overflow:hidden;-webkit-tap-highlight-color:transparent;user-select:none}
+/* ステージは 9:16 の縦長。--u はステージ幅の1/100 */
+#stage{position:relative;background:#000;overflow:hidden;font-size:calc(var(--u)*4.2);line-height:1.6;letter-spacing:.04em}
+.scr{position:absolute;inset:0;display:none}
+.scr.on{display:block}
+.win{position:absolute;background:#000;border:calc(var(--u)*.7) solid var(--fg);border-radius:calc(var(--u)*1.2);padding:calc(var(--u)*2) calc(var(--u)*2.2);box-shadow:0 0 0 calc(var(--u)*.5) #000}
+button{font:inherit;color:inherit;background:none;border:0;padding:0;cursor:pointer;letter-spacing:inherit}
+button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+.opt{display:block;text-align:left;padding:calc(var(--u)*1.2) 0 calc(var(--u)*1.2) calc(var(--u)*5.4);position:relative;width:100%}
+.opt::before{content:"▶";position:absolute;left:calc(var(--u)*.8);opacity:0}
+.opt:hover::before,.opt:focus-visible::before,.opt.cur::before{opacity:1}
+
+/* ── タイトル ── */
+#logo{position:absolute;left:0;right:0;top:16%;text-align:center}
+#logo .t{font-size:calc(var(--u)*7.6);color:var(--gold);letter-spacing:.08em;text-shadow:calc(var(--u)*.7) calc(var(--u)*.7) 0 var(--red);line-height:1.4}
+#logo .s{font-size:calc(var(--u)*3.1);color:var(--dim);margin-top:calc(var(--u)*3);line-height:1.6;padding:0 calc(var(--u)*7)}
+
+/* ── じゅもん入力：上=入力欄（5文字×4段）／下=五十音表（8列） ── */
+#w-slots{display:flex;flex-direction:column}
+#slots{display:flex;flex-direction:column;align-items:center;gap:calc(var(--u)*1.6);margin:auto 0}
+.grp{display:flex;gap:calc(var(--u)*1.4)}
+.sl{width:calc(var(--u)*14);min-height:calc(var(--u)*8.2);text-align:center;font-size:calc(var(--u)*6);line-height:1.35;border-bottom:calc(var(--u)*.5) solid #444}
+.sl.cur{border-bottom-color:var(--fg);animation:blink 1s steps(1) infinite}
+#w-grid{padding:calc(var(--u)*1.2);display:flex;flex-direction:column}
+#grid{display:grid;grid-template-columns:repeat(8,1fr);grid-auto-rows:minmax(calc(var(--u)*11.3),1fr);gap:calc(var(--u)*.4) 0;flex:1 1 auto;min-height:0}
+#grid button{font-size:calc(var(--u)*5.4);padding:0;border-radius:calc(var(--u)*.6);line-height:1.2}
+#grid button:hover,#grid button:focus-visible{background:#1c1c1c}
+#cmds{display:flex;justify-content:space-around;margin-top:calc(var(--u)*1.4);font-size:calc(var(--u)*4.6)}
+#cmds button{position:relative;padding:calc(var(--u)*1.2) calc(var(--u)*2) calc(var(--u)*1.2) calc(var(--u)*5.4)}
+#cmds button::before{content:"▶";position:absolute;left:calc(var(--u)*1.2);opacity:0}
+#cmds button:hover::before,#cmds button:focus-visible::before{opacity:1}
+
+/* ── 王の間：ステータス窓と装備窓は上下に積む ── */
+#cv{position:absolute;inset:0;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+#stat{left:3%;right:3%;top:3.5%;font-size:calc(var(--u)*3.6);line-height:1.5;padding:calc(var(--u)*1.4) calc(var(--u)*2.2)}
+#equip{left:3%;right:3%;top:18%;max-height:24%;overflow:hidden;font-size:calc(var(--u)*3.4);line-height:1.45;padding:calc(var(--u)*1.4) calc(var(--u)*2.2)}
+#menu{left:3%;right:3%;bottom:2.5%}
+#msg{left:3%;right:3%;bottom:2.5%;height:26%;white-space:pre-wrap;cursor:pointer;font-size:calc(var(--u)*4)}
+#msg .more{position:absolute;right:calc(var(--u)*2.4);bottom:calc(var(--u)*1.2);animation:blink .8s steps(1) infinite;display:none}
+.row{display:flex;justify-content:space-between}
+.cols{display:grid;grid-template-columns:1fr 1fr;column-gap:calc(var(--u)*3)}
+.hd{color:var(--dim);font-size:.85em;margin-bottom:calc(var(--u)*.6)}
+
+/* ── デモ用パネル（縦画面で押しやすい位置へ） ── */
+#demo{position:absolute;right:1.5%;top:.6%;font-size:calc(var(--u)*3);color:#aaa;background:rgba(0,0,0,.65);border:1px solid #555;border-radius:calc(var(--u)*.8);padding:calc(var(--u)*.6) calc(var(--u)*1.8);z-index:5}
+#dpanel{position:absolute;left:6%;right:6%;top:7%;display:none;z-index:6;background:#101010;border:1px solid #444;border-radius:calc(var(--u)*1.2);padding:calc(var(--u)*1.6);font-size:calc(var(--u)*3.6);font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP",sans-serif}
+#dpanel.on{display:block}
+#dpanel button{display:block;width:100%;text-align:left;padding:calc(var(--u)*1.8) calc(var(--u)*1.2);color:#ddd;border-radius:calc(var(--u)*.6)}
+#dpanel button:hover{background:#222}
+
+#flash{position:absolute;inset:0;background:#fcfcfc;opacity:0;pointer-events:none}
+@keyframes blink{50%{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sl.cur,#msg .more{animation:none}}
+</style>
+</head>
+<body>
+<div id="stage">
+
+  <section class="scr on" id="s-title" aria-label="タイトル">
+    <div id="logo"><div class="t">じゅもんの ぼうけん</div><div class="s">ふっかつのじゅもん 体験モック（オリジナル）</div></div>
+    <div class="win" style="left:6%;right:6%;top:58%">
+      <button class="opt" data-go="input">ふっかつのじゅもんを いれる</button>
+      <button class="opt" data-go="how">じゅもんの しくみ</button>
+    </div>
+  </section>
+
+  <section class="scr" id="s-input" aria-label="じゅもん入力">
+    <div class="win" id="w-slots" style="left:3%;right:3%;top:4%;height:28.5%">
+      <div>ふっかつのじゅもんを いれてください</div>
+      <div id="slots"></div>
+    </div>
+    <div class="win" id="w-grid" style="left:0.8%;right:0.8%;top:33.5%;bottom:2.5%">
+      <div id="grid"></div>
+      <div id="cmds"><button id="b-back">もどる</button><button id="b-done">おわり</button></div>
+    </div>
+  </section>
+
+  <section class="scr" id="s-room" aria-label="王の間">
+    <canvas id="cv" width="180" height="320"></canvas>
+    <div class="win" id="stat" style="display:none"></div>
+    <div class="win" id="equip" style="display:none"></div>
+    <div class="win" id="menu" style="display:none">
+      <button class="opt" id="m-go">ぼうけんに でる</button>
+      <button class="opt" id="m-ask">じゅもんを きく</button>
+      <button class="opt" id="m-top">タイトルに もどる</button>
+    </div>
+    <div class="win" id="msg" style="display:none"><span id="msgt"></span><span class="more">▼</span></div>
+  </section>
+
+  <div id="flash"></div>
+  <button id="demo" aria-label="デモ用メニュー">LT</button>
+  <div id="dpanel">
+    <button id="d-sample">サンプルのじゅもんを自動入力</button>
+    <button id="d-break">1文字だけ変える</button>
+    <button id="d-show">サンプルのじゅもんを表示</button>
+    <button id="d-top">タイトルに戻る</button>
+  </div>
+</div>
+
+<script>
+const KANA=Array.from("あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわがぎぐげござじずぜぞだぢづでどばびぶべぼ");
+const NAMET=Array.from("０１２３４５６７８９あいうえおかきくけこさしすせそたちつてとなにぬねのはひふへほまみむめもやゆよらりるれろわをんっゃゅょ゛゜ー　");
+const WEAPON=["なし","ぼくとう","いしのおの","てつのけん","ぎんのやり","ほむらのけん","ひかりのけん","いにしえのけん"];
+const ARMOR=["なし","ぬののふく","かわのよろい","くさりよろい","てつのよろい","はがねのよろい","まどうのよろい","いにしえのよろい"];
+const SHIELD=["なし","きのたて","てつのたて","かがみのたて"];
+const ITEM=["なし","ランタン","きよめのみず","つばさのはね","ほしのうろこ","ねむりのふえ","ちからのゆびわ","いにしえのしるし","ひめのおまもり","のろいのおび","ぎんのハープ","やみのくびかざり","ひのいし","あめのつえ","にじのかけら"];
+const PERM=[5,12,0,9,3,13,7,1,10,4,11,2,8,6];
+const SAMPLE={name:"まる",exp:2400,gold:815,weapon:3,armor:2,shield:1,herbs:3,keys:2,items:[1,2,3,0,0,0,0,0],flags:0,pattern:5};
+
+function crc8of16(bytes){let c=0;for(const b of bytes){c^=b<<8;for(let k=0;k<8;k++)c=(c&0x8000)?((c<<1)^0x1021)&0xffff:(c<<1)&0xffff;}return c&0xff;}
+function encode(s){
+  let b="";const add=(v,n)=>{b+=v.toString(2).padStart(n,"0")};
+  const nm=Array.from(s.name);while(nm.length<4)nm.push("　");
+  nm.forEach(c=>add(NAMET.indexOf(c),6));
+  add(s.exp,16);add(s.gold,16);add(s.weapon,3);add(s.armor,3);add(s.shield,2);add(s.herbs,4);add(s.keys,4);
+  s.items.forEach(v=>add(v,4));add(s.flags,5);add(s.pattern,3);
+  const data=[];for(let i=0;i<14;i++)data.push(parseInt(b.slice(i*8,i*8+8),2));
+  const scr=PERM.map(i=>data[i]);const all=[...scr,crc8of16(scr)];
+  const bits=all.map(v=>v.toString(2).padStart(8,"0")).join("");
+  let prev=0,out="";
+  for(let i=0;i<20;i++){const v=parseInt(bits.slice(i*6,i*6+6),2);const c=i===0?(v+4)%64:(prev+v+4)%64;out+=KANA[c];prev=c;}
+  return out;
+}
+function decode(str){
+  const a=Array.from(str);if(a.length!==20)return null;
+  const codes=a.map(c=>KANA.indexOf(c));if(codes.some(c=>c<0))return null;
+  let bits="";codes.forEach((c,i)=>{const v=i===0?(c-4+64)%64:(c-codes[i-1]-4+128)%64;bits+=v.toString(2).padStart(6,"0")});
+  const all=[];for(let i=0;i<15;i++)all.push(parseInt(bits.slice(i*8,i*8+8),2));
+  const scr=all.slice(0,14);if(crc8of16(scr)!==all[14])return null;
+  const data=[];PERM.forEach((p,i)=>{data[p]=scr[i]});
+  const db=data.map(v=>v.toString(2).padStart(8,"0")).join("");let p=0;const take=n=>{const v=parseInt(db.slice(p,p+n),2);p+=n;return v};
+  const name=[0,1,2,3].map(()=>NAMET[take(6)]).join("").replace(/　+$/,"");
+  const s={name,exp:take(16),gold:take(16),weapon:take(3),armor:take(3),shield:take(2),herbs:take(4),keys:take(4),items:[0,0,0,0,0,0,0,0].map(()=>take(4)),flags:take(5),pattern:take(3)};
+  if(s.herbs>6||s.keys>6||s.items.some(v=>v>14)||!s.name)return null;
+  return s;
+}
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const stage=$("stage");
+function fit(redraw){
+  // 9:16 を「これ以上横長にはしない」下限とし、縦に余裕がある端末では画面の高さいっぱいまで伸ばす。
+  // --u はステージ幅の1/100（幅基準）。横向きにされた場合は縦長ステージが中央に出るだけ。
+  const vw=document.body.clientWidth, vh=document.body.clientHeight;
+  const w=Math.min(vw, vh*9/16);   // 9:16より横長にはしない
+  const h=Math.min(vh, w*2.3);     // 縦に伸ばしすぎない上限
+  stage.style.width=w+"px";
+  stage.style.height=h+"px";
+  stage.style.setProperty("--u",(w/100)+"px");
+  // canvas の縦横比をステージに合わせる。こうしないとドット絵が縦に引き伸ばされる。
+  const c=document.getElementById("cv");
+  if(c){
+    const nh=Math.round(180*h/w);
+    if(c.width!==180||c.height!==nh){
+      c.width=180;c.height=nh;
+      // 初回は canvas の初期化前なので描画しない。リサイズ・回転時のみ描き直す。
+      if(redraw) drawRoom(heroShown);
+    }
+  }
+}
+let heroShown=false;
+addEventListener("resize",()=>fit(true));
+addEventListener("orientationchange",()=>fit(true));
+fit(false);
+const reduce=matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+let entry=[],state=null,busy=false;
+function show(id){document.querySelectorAll(".scr").forEach(s=>s.classList.toggle("on",s.id==="s-"+id));}
+document.querySelectorAll("[data-go]").forEach(b=>b.addEventListener("click",()=>{b.dataset.go==="input"?openInput():openHow()}));
+
+const slots=$("slots");
+function drawSlots(){
+  const g=[5,5,5,5];let k=0;slots.innerHTML="";
+  g.forEach(n=>{const d=document.createElement("div");d.className="grp";for(let i=0;i<n;i++,k++){const s=document.createElement("div");s.className="sl"+(k===entry.length?" cur":"");s.textContent=entry[k]||"";d.appendChild(s)}slots.appendChild(d)});
+}
+const grid=$("grid");
+KANA.forEach(c=>{const b=document.createElement("button");b.textContent=c;b.addEventListener("click",()=>typeKana(c));grid.appendChild(b)});
+function typeKana(c){if(busy||entry.length>=20)return;entry.push(c);drawSlots()}
+$("b-back").addEventListener("click",()=>{if(busy)return;entry.pop();drawSlots()});
+$("b-done").addEventListener("click",()=>{if(!busy)submit()});
+function openInput(){entry=[];drawSlots();show("input")}
+
+function submit(){
+  const s=decode(entry.join(""));
+  if(!s){toRoom(null);say("じゅもんが ちがいます。\nもういちど たしかめて いれてください。",()=>{show("input")});return;}
+  state=s;flashThen(()=>{toRoom(s);say(`おお ${s.name}よ！ よくぞ もどった。\nふっかつの じゅもんにより\nそなたの ぼうけんは よみがえった。`,()=>{showStatus(s);$("menu").style.display="block";$("m-go").focus()})});
+}
+
+function flashThen(cb){const f=$("flash");if(reduce){cb();return}let n=0;const t=setInterval(()=>{f.style.opacity=n%2?0:.85;if(++n>5){clearInterval(t);f.style.opacity=0;cb()}},70)}
+
+let typing=null;
+function say(text,cb){
+  const m=$("msg"),t=$("msgt"),more=m.querySelector(".more");
+  m.style.display="block";more.style.display="none";t.textContent="";busy=true;
+  const chars=Array.from(text);let i=0;clearInterval(typing);
+  const done=()=>{clearInterval(typing);t.textContent=text;more.style.display="inline";m.onclick=()=>{m.onclick=null;m.style.display="none";busy=false;cb&&cb()}};
+  if(reduce){done();return}
+  m.onclick=()=>{done()};
+  typing=setInterval(()=>{t.textContent+=chars[i++];if(i>=chars.length)done()},45);
+}
+
+const cv=$("cv"),cx=cv.getContext("2d");
+const COL={Y:"#f8b800",R:"#d82800",S:"#fcbcb0",K:"#000000",W:"#fcfcfc",P:"#6844fc",B:"#0058f8",N:"#a0522d",G:"#7c7c7c"};
+const KING=["....Y..YY..Y....","....YYYYYYYY....","....YRYYYYRY....","....SSSSSSSS....","....SKSSSSKS....","....SSSSSSSS....","...PWWWWWWWWP...","..PPWWWWWWWWPP..","..PPPWWWWWWPPP..",".PPPPPWWWWPPPPP.",".SPPPPPYYPPPPPS.",".SPPPPPYYPPPPPS.","..PPPPPYYPPPPP..","..PPPPPPPPPPPP..","..PPPPPPPPPPPP..","...RRR....RRR..."];
+const HERO=["......BBBB......",".....BBBBBB.....",".....BSSSSB.....",".....SKSSKS.....",".....SSSSSS.....","......SSSS......","....RBBBBBBR....","...RRBBBBBBRR...","...RSBBYYBBSR...","...R.BBBBBB.R...","...R.BBBBBB.R...",".....BB..BB.....",".....NN..NN.....",".....NN..NN.....","....NNN..NNN....","................"];
+function sprite(map,x,y,s=1){map.forEach((r,j)=>Array.from(r).forEach((c,i)=>{if(c!=="."){cx.fillStyle=COL[c];cx.fillRect(x+i*s,y+j*s,s,s)}}))}
+function drawRoom(showHero){
+  heroShown=!!showHero;
+  const W=cv.width, H=cv.height, k=H/320;   // k = 320基準からの伸び率
+  const FL=Math.round(172*k);               // 床が始まる高さ
+  const Y=v=>Math.round(v*k);
+  cx.fillStyle="#000";cx.fillRect(0,0,W,H);
+  // 奥の壁（レンガ）
+  for(let y=0;y<FL;y+=10)for(let x=0;x<W;x+=20){const o=(y/10)%2?10:0;
+    cx.fillStyle="#5c5c5c";cx.fillRect(x,y,20,10);
+    cx.fillStyle="#3c3c3c";cx.fillRect(x+o,y,1,10);cx.fillRect(x,y+9,20,1)}
+  // 床（市松）
+  for(let y=FL;y<H;y+=20)for(let x=0;x<W;x+=20){
+    cx.fillStyle=((x+y)/20)%2?"#a8a8a8":"#c8c8c8";cx.fillRect(x,y,20,20);
+    cx.fillStyle="#8c8c8c";cx.fillRect(x,y,20,1);cx.fillRect(x,y,1,20)}
+  // 細いカーペット
+  cx.fillStyle="#f8b800";cx.fillRect(76,FL,28,H-FL);
+  cx.fillStyle="#a81000";cx.fillRect(78,FL,24,H-FL);
+  // 左右の柱（柱頭と台座つき）
+  const PH=Y(68);
+  [12,148].forEach(x=>{
+    cx.fillStyle="#dcdcdc";cx.fillRect(x,FL,20,PH);
+    cx.fillStyle="#9c9c9c";cx.fillRect(x+15,FL,5,PH);
+    cx.fillStyle="#f0f0f0";cx.fillRect(x-3,FL-4,26,8);cx.fillRect(x-3,FL+PH-4,26,8);
+    cx.fillStyle="#7c7c7c";cx.fillRect(x-3,FL+2,26,2);cx.fillRect(x-3,FL+PH+2,26,2)});
+  // 玉座（カーペットよりはっきり広く、肘掛けつき）
+  cx.fillStyle="#f8b800";cx.fillRect(54,Y(104),72,FL-Y(104));
+  cx.fillStyle="#a81000";cx.fillRect(58,Y(108),64,FL-Y(108));
+  cx.fillStyle="#f8b800";cx.fillRect(54,Y(142),14,FL-Y(142));cx.fillRect(112,Y(142),14,FL-Y(142));
+  // 壁の飾り（細い垂れ幕）
+  cx.fillStyle="#f8b800";cx.fillRect(78,Y(46),24,Y(46));
+  cx.fillStyle="#a81000";cx.fillRect(81,Y(49),18,Y(40));
+  // 王と勇者（ドット絵の定義は原寸のまま、2倍に拡大して描く）
+  sprite(KING,74,Y(126),2);
+  if(showHero)sprite(HERO,74,Y(190),2);
+}
+function toRoom(s){$("stat").style.display="none";$("equip").style.display="none";$("menu").style.display="none";drawRoom(!!s);show("room")}
+function lv(e){return Math.min(30,Math.floor(Math.sqrt(e/8))+1)}
+function showStatus(s){
+  $("stat").innerHTML=`<div class="hd">${s.name}</div><div class="cols"><div class="row"><span>レベル</span><span>${lv(s.exp)}</span></div><div class="row"><span>G</span><span>${s.gold}</span></div><div class="row"><span>E</span><span>${s.exp}</span></div><div class="row"><span>やくそう</span><span>${s.herbs}</span></div><div class="row"><span>かぎ</span><span>${s.keys}</span></div></div>`;
+  const it=s.items.filter(v=>v).map(v=>ITEM[v]);
+  $("equip").innerHTML=`<div class="hd">そうび</div><div class="cols"><div>${WEAPON[s.weapon]}</div><div>${ARMOR[s.armor]}</div><div>${SHIELD[s.shield]}</div></div><div class="hd" style="margin-top:.5em">どうぐ</div><div class="cols">${it.map(v=>`<div>${v}</div>`).join("")||"<div>なし</div>"}</div>`;
+  $("stat").style.display="block";$("equip").style.display="block";
+}
+$("m-go").addEventListener("click",()=>{$("menu").style.display="none";$("equip").style.display="none";say("このモックは ここまでです。\nふっかつの じゅもんが きちんと はたらく ことが わかったかな。",()=>{$("equip").style.display="block";$("menu").style.display="block"})});
+$("m-ask").addEventListener("click",()=>{
+  $("menu").style.display="none";$("equip").style.display="none";
+  const s={...state,pattern:Math.floor(Math.random()*8)};const j=encode(s);
+  const pretty=[j.slice(0,5),j.slice(5,12),j.slice(12,17),j.slice(17)].join(" ");
+  say(`そなたの ふっかつの じゅもんは\n「${pretty}」\nじゃ。 かきとめておくが よい。`,()=>{say("おなじ ぼうけんでも じゅもんは\n8とおり あるのじゃ。 もういちど きけば\nちがう じゅもんが きけるぞ。",()=>{$("equip").style.display="block";$("menu").style.display="block"})});
+});
+$("m-top").addEventListener("click",()=>{$("menu").style.display="none";$("stat").style.display="none";$("equip").style.display="none";show("title")});
+$("stat").addEventListener("click",()=>{$("equip").style.display=$("equip").style.display==="none"?"block":"none"});
+
+const HOW=[
+ "① ぼうけんの きろくを 0と1に する。\nなまえ・けいけんち・ゴールド・もちもの…\nぜんぶで 112ビットに つめこむ。",
+ "② ならびを わざと バラバラに する。\nどこに なにが あるのか\nそとから わからなく するためだ。",
+ "③ チェックコード 8ビットを つける。\n1もじでも まちがえると\nこの すうじが あわなくなる。",
+ "④ 6ビットずつ くぎって 20こに する。\nまえの もじの ばんごうに たして\nつぎの もじを きめていく。",
+ "⑤ さいごに 64もじの ひらがなひょうで\nもじに かえる。\nこれが ふっかつの じゅもんだ。"
+];
+function openHow(){toRoom(null);let i=0;const next=()=>{if(i<HOW.length)say(HOW[i++],next);else show("title")};next()}
+
+const dp=$("dpanel");
+$("demo").addEventListener("click",()=>dp.classList.toggle("on"));
+const SAMPLE_JUMON=encode(SAMPLE);
+$("d-sample").addEventListener("click",()=>{dp.classList.remove("on");show("input");entry=[];drawSlots();busy=true;const a=Array.from(SAMPLE_JUMON);let i=0;const t=setInterval(()=>{entry.push(a[i++]);drawSlots();if(i>=a.length){clearInterval(t);busy=false}},reduce?0:140)});
+$("d-break").addEventListener("click",()=>{dp.classList.remove("on");if(busy)return;show("input");if(entry.length!==20){entry=Array.from(SAMPLE_JUMON)}let i,c,t;do{i=Math.floor(Math.random()*20);c=KANA[Math.floor(Math.random()*64)];t=[...entry];t[i]=c}while(c===entry[i]||decode(t.join(""))!==null);entry=t;drawSlots();const el=slots.querySelectorAll(".sl")[i];el.style.color="#f8b800"});
+$("d-show").addEventListener("click",()=>{dp.classList.remove("on");alert("サンプルのじゅもん\n"+[SAMPLE_JUMON.slice(0,5),SAMPLE_JUMON.slice(5,12),SAMPLE_JUMON.slice(12,17),SAMPLE_JUMON.slice(17)].join(" "))});
+$("d-top").addEventListener("click",()=>{dp.classList.remove("on");$("msg").style.display="none";busy=false;show("title")});
+</script>
+</body>
+</html>
